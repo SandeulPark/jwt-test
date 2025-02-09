@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kb.jwttest.dto.UserJoinCommand;
 import com.kb.jwttest.entity.UserEntity;
 import com.kb.jwttest.jwt.JwtUtils;
+import com.kb.jwttest.redis.RefreshToken;
+import com.kb.jwttest.redis.RefreshTokenRepository;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 
 import java.nio.charset.StandardCharsets;
@@ -34,6 +37,7 @@ class JwtTest {
     @Autowired UserRepository userRepository;
     @Autowired BCryptPasswordEncoder bCryptPasswordEncoder;
     @Autowired JwtUtils jwtUtils;
+    @Autowired RefreshTokenRepository refreshTokenRepository;
 
     @AfterEach
     void tearDown() {
@@ -85,7 +89,7 @@ class JwtTest {
         );
 
         // Then
-        resultActions
+        MvcResult mvcResult = resultActions
                 .andExpect(status().isOk())
                 .andExpect(result -> {
                     MockHttpServletResponse response = result.getResponse();
@@ -101,7 +105,13 @@ class JwtTest {
                     assertThat(jwtUtils.getRole(refreshToken)).isEqualTo("ROLE_ADMIN");
                     assertThat(jwtUtils.getCategory(refreshToken)).isEqualTo("refresh");
                 })
-                .andDo(print());
+                .andDo(print())
+                .andReturn();
+
+        String refresh = mvcResult.getResponse().getCookie("refresh").getValue();
+
+        RefreshToken foundRefreshToken = refreshTokenRepository.findByToken(refresh).orElseThrow();
+        assertThat(foundRefreshToken).isNotNull();
     }
 
     @DisplayName("인증이 필요한 자원 요청 시 토큰이 유효하지 않은 경우 자원 접근이 거부된다.")

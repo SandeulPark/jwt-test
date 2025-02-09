@@ -1,9 +1,10 @@
 package com.kb.jwttest.controller;
 
+import com.kb.jwttest.dto.Tokens;
 import com.kb.jwttest.dto.UserInfoResponse;
 import com.kb.jwttest.dto.UserJoinCommand;
 import com.kb.jwttest.jwt.HttpResponseUtil;
-import com.kb.jwttest.jwt.JwtUtils;
+import com.kb.jwttest.jwt.JwtService;
 import com.kb.jwttest.security.SecurityContextUtils;
 import com.kb.jwttest.service.JoinService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,7 +23,7 @@ import java.util.Map;
 @RestController
 public class Controller {
     private final JoinService joinService;
-    private final JwtUtils jwtUtils;
+    private final JwtService jwtService;
 
     @GetMapping("/")
     public Map<String, Object> main() {
@@ -56,20 +57,13 @@ public class Controller {
                 .orElseThrow()
                 .getValue();
 
-        if (refreshToken == null)
-            return ResponseEntity.badRequest().body("refresh token is null");
+        try {
+            Tokens tokens = jwtService.reissue(refreshToken);
+            HttpResponseUtil.setSuccessResponse(response, tokens.accessToken(), tokens.refreshToken());
+            return ResponseEntity.ok().build();
 
-        if (jwtUtils.isExpired(refreshToken))
-            return ResponseEntity.badRequest().body("refresh token is expired");
-
-        if (!jwtUtils.isRefreshToken(refreshToken))
-            return ResponseEntity.badRequest().body("token is invalid");
-
-        String newAccessToken = jwtUtils.createAccessToken(jwtUtils.getUsername(refreshToken), jwtUtils.getRole(refreshToken));
-        String newRefreshToken = jwtUtils.createRefreshToken(jwtUtils.getUsername(refreshToken), jwtUtils.getRole(refreshToken));
-
-        HttpResponseUtil.setSuccessResponse(response, newAccessToken, newRefreshToken);
-
-        return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

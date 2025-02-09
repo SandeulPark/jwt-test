@@ -3,6 +3,7 @@ package com.kb.jwttest.security;
 import com.kb.jwttest.jwt.JwtFilter;
 import com.kb.jwttest.jwt.JwtUtils;
 import com.kb.jwttest.jwt.LoginFilter;
+import com.kb.jwttest.redis.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,6 +26,7 @@ import java.util.Collections;
 public class SecurityConfig {
     private final AuthenticationConfiguration authenticationConfiguration;
     private final JwtUtils jwtUtils;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     @Bean
     public AuthenticationManager authenticationManager() throws Exception {
@@ -33,7 +35,7 @@ public class SecurityConfig {
 
     @Bean
     public UsernamePasswordAuthenticationFilter loginFilter() throws Exception {
-        return new LoginFilter(authenticationManager(), jwtUtils);
+        return new LoginFilter(authenticationManager(), jwtUtils, refreshTokenRepository);
     }
 
     @Bean

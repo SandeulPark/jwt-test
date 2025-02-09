@@ -1,5 +1,7 @@
 package com.kb.jwttest.jwt;
 
+import com.kb.jwttest.redis.RefreshToken;
+import com.kb.jwttest.redis.RefreshTokenRepository;
 import com.kb.jwttest.security.CustomUserDetails;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,10 +19,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  */
 public class LoginFilter extends UsernamePasswordAuthenticationFilter {
     private final JwtUtils jwtUtils;
+    private final RefreshTokenRepository refreshTokenRepository;
 
-    public LoginFilter(AuthenticationManager authenticationManager, JwtUtils jwtUtils) {
+    public LoginFilter(AuthenticationManager authenticationManager, JwtUtils jwtUtils, RefreshTokenRepository refreshTokenRepository) {
         super(authenticationManager);
         this.jwtUtils = jwtUtils;
+        this.refreshTokenRepository = refreshTokenRepository;
     }
 
     @Override
@@ -41,6 +45,8 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
 
         String access = jwtUtils.createAccessToken(userDetails.getUsername(), grantedAuthority.getAuthority());
         String refresh = jwtUtils.createRefreshToken(userDetails.getUsername(), grantedAuthority.getAuthority());
+
+        refreshTokenRepository.save(new RefreshToken(refresh));
 
         HttpResponseUtil.setSuccessResponse(response, access, refresh);
     }
