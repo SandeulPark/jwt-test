@@ -12,6 +12,10 @@ spring:
     database: h2
     database-platform: org.hibernate.dialect.H2Dialect
 
+jwt:
+  secret: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  expiredMs: 36000000
+
 logging:
   level:
     sql: debug

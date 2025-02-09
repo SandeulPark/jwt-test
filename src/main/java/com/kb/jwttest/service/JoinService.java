@@ -17,7 +17,7 @@ public class JoinService {
         String username = command.username();
 
         if (userRepository.existsByUsername(username))
-            throw new IllegalArgumentException("이미 존재하는 아이디입니다.");
+            throw new IllegalArgumentException("이미 존재하는 회원입니다.");
 
         return UserInfoResponse.from(userRepository.save(command.toEntity(bCryptPasswordEncoder)));
     }

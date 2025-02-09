@@ -3,16 +3,23 @@ package com.kb.jwttest.jwt;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-@RequiredArgsConstructor
+/**
+ * 요청에 있는 로그인 정보를 꺼내서 인증을 하고, JWT를 발급하는 필터
+ */
 public class LoginFilter extends UsernamePasswordAuthenticationFilter {
-    private final AuthenticationManager authenticationManager;
+    private final JwtUtils jwtUtils;
+
+    public LoginFilter(AuthenticationManager authenticationManager, JwtUtils jwtUtils) {
+        super(authenticationManager);
+        this.jwtUtils = jwtUtils;
+    }
 
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
@@ -21,19 +28,22 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
 
         UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(username, password);
 
-        return authenticationManager.authenticate(authToken); // 검증을 위임
+        return super.getAuthenticationManager().authenticate(authToken); // 검증을 위임
     }
 
     // 인증 성공 시
     @Override
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) {
-        System.out.println("로그인 성공");
+        CustomUserDetails userDetails = (CustomUserDetails) authResult.getPrincipal();
+        GrantedAuthority grantedAuthority = userDetails.getAuthorities().stream().findAny().orElseThrow();
+        String token = jwtUtils.createToken(userDetails.getUsername(), grantedAuthority.getAuthority());
+
+        response.addHeader("Authorization", "Bearer " + token);
     }
 
     // 인증 실패 시
     @Override
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) {
-        System.out.println("로그인 실패 = " + failed.getLocalizedMessage());
-        failed.printStackTrace();
+        response.setStatus(401);
     }
 }

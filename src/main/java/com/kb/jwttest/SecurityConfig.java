@@ -1,5 +1,7 @@
 package com.kb.jwttest;
 
+import com.kb.jwttest.jwt.JwtFilter;
+import com.kb.jwttest.jwt.JwtUtils;
 import com.kb.jwttest.jwt.LoginFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -19,10 +21,16 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfig {
     private final AuthenticationConfiguration authenticationConfiguration;
+    private final JwtUtils jwtUtils;
 
     @Bean
     public AuthenticationManager authenticationManager() throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
+    }
+
+    @Bean
+    public UsernamePasswordAuthenticationFilter loginFilter() throws Exception {
+        return new LoginFilter(authenticationManager(), jwtUtils);
     }
 
     @Bean
@@ -45,7 +53,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                .addFilterAt(new LoginFilter(authenticationManager()), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new JwtFilter(jwtUtils), LoginFilter.class)
+                .addFilterAt(loginFilter(), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 }
