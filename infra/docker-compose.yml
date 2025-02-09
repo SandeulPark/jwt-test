@@ -1,0 +1,9 @@
+version: "3.8"
+
+services:
+  redis: # container name
+    image: redis:7.4.2-alpine
+    ports: # 바인딩할 포트:내부 포트
+      - 6379:6379
+    platform: linux/arm64
+#    command: redis-server /usr/local/etc/redis/redis.conf
