@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kb.jwttest.dto.UserJoinCommand;
 import com.kb.jwttest.entity.UserEntity;
 import com.kb.jwttest.jwt.JwtUtils;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -22,8 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @AutoConfigureMockMvc
 @SpringBootTest
@@ -39,6 +40,7 @@ class JwtTest {
         userRepository.deleteAll();
     }
 
+    @DisplayName("회원가입")
     @Test
     void join() throws Exception {
         // Given
@@ -68,7 +70,7 @@ class JwtTest {
         assertThat(userEntity.getRole()).isEqualTo("ROLE_ADMIN");
     }
 
-    @DisplayName("로그인 성공 시 JWT가 발급되어야 한다.")
+    @DisplayName("로그인 성공 시 accessToken,refreshToken이 발급되어야 한다.")
     @Test
     void login() throws Exception {
         // Given
@@ -86,10 +88,18 @@ class JwtTest {
         resultActions
                 .andExpect(status().isOk())
                 .andExpect(result -> {
-                    String authorization = result.getResponse().getHeader("Authorization");
-                    String token = Objects.requireNonNull(authorization).substring(7);
-                    assertThat(jwtUtils.getUsername(token)).isEqualTo("산드로");
-                    assertThat(jwtUtils.getRole(token)).isEqualTo("ROLE_ADMIN");
+                    MockHttpServletResponse response = result.getResponse();
+
+                    String accessToken = response.getHeader("access");
+                    assertThat(jwtUtils.getUsername(accessToken)).isEqualTo("산드로");
+                    assertThat(jwtUtils.getRole(accessToken)).isEqualTo("ROLE_ADMIN");
+                    assertThat(jwtUtils.getCategory(accessToken)).isEqualTo("access");
+
+                    Cookie refreshTokenCookie = response.getCookie("refresh");
+                    String refreshToken = Objects.requireNonNull(refreshTokenCookie).getValue();
+                    assertThat(jwtUtils.getUsername(refreshToken)).isEqualTo("산드로");
+                    assertThat(jwtUtils.getRole(refreshToken)).isEqualTo("ROLE_ADMIN");
+                    assertThat(jwtUtils.getCategory(refreshToken)).isEqualTo("refresh");
                 })
                 .andDo(print());
     }
@@ -102,7 +112,7 @@ class JwtTest {
                 .andDo(print());
     }
 
-    @DisplayName("자원 접근 시 JWT가 유효하다면 접근이 가능해야 한다.")
+    @DisplayName("자원 접근 시 accessToken이 유효하다면 접근이 가능해야 한다.")
     @Test
     void auth() throws Exception {
         // Given
@@ -110,7 +120,7 @@ class JwtTest {
 
         // When
         ResultActions resultActions = mvc.perform(get("/admin")
-                .header("Authorization", jwt)
+                .header("access", jwt)
         );
 
         // Then
@@ -127,7 +137,7 @@ class JwtTest {
 
         // When
         ResultActions resultActions = mvc.perform(get("/")
-                .header("Authorization", jwt)
+                .header("access", jwt)
         );
 
         // Then
@@ -135,6 +145,24 @@ class JwtTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.currentUsername").value("산드로"))
                 .andExpect(jsonPath("$.currentRole").value("ROLE_ADMIN"))
+                .andDo(print());
+    }
+
+    @DisplayName("토큰이 만료된 경우 토큰 만료 응답이 내려온다.")
+    @Test
+    void expirationTest() throws Exception {
+        // Given
+        String accessToken = jwtUtils.createToken("access", "산드로", "ROLE_ADMIN", 1L);
+
+        // When
+        ResultActions resultActions = mvc.perform(get("/")
+                .header("access", accessToken)
+        );
+
+        // Then
+        resultActions
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().string("access token expired"))
                 .andDo(print());
     }
 
@@ -148,6 +176,6 @@ class JwtTest {
                         .characterEncoding(StandardCharsets.UTF_8)
                 ).andReturn()
                 .getResponse()
-                .getHeader("Authorization");
+                .getHeader("access");
     }
 }

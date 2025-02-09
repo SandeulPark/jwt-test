@@ -2,8 +2,10 @@ package com.kb.jwttest.jwt;
 
 import com.kb.jwttest.security.CustomUserDetails;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -37,14 +39,27 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) {
         CustomUserDetails userDetails = (CustomUserDetails) authResult.getPrincipal();
         GrantedAuthority grantedAuthority = userDetails.getAuthorities().stream().findAny().orElseThrow();
-        String token = jwtUtils.createToken(userDetails.getUsername(), grantedAuthority.getAuthority());
 
-        response.addHeader("Authorization", "Bearer " + token);
+        String access = jwtUtils.createAccessToken(userDetails.getUsername(), grantedAuthority.getAuthority());
+        String refresh = jwtUtils.createRefreshToken(userDetails.getUsername(), grantedAuthority.getAuthority());
+
+        // accessToken은 response header에
+        response.setHeader("access", access);
+        // refreshToken은 response cookie에
+        response.addCookie(createCookie("refresh", refresh));
+        response.setStatus(HttpStatus.OK.value());
+    }
+
+    private Cookie createCookie(String key, String value) {
+        Cookie cookie = new Cookie(key, value);
+        cookie.setMaxAge(60 * 60 * 24);
+        cookie.setHttpOnly(true);
+        return cookie;
     }
 
     // 인증 실패 시
     @Override
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) {
-        response.setStatus(401);
+        response.setStatus(HttpStatus.UNAUTHORIZED.value());
     }
 }

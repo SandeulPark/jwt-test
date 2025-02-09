@@ -14,7 +14,8 @@ spring:
 
 jwt:
   secret: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-  expiredMs: 36000000
+  accesExpiredMs: 36000000
+  refreshExpiredMs: 864000000
 
 logging:
   level:
