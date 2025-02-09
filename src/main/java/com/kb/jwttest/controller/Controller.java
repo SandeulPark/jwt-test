@@ -2,6 +2,7 @@ package com.kb.jwttest.controller;
 
 import com.kb.jwttest.dto.UserInfoResponse;
 import com.kb.jwttest.dto.UserJoinCommand;
+import com.kb.jwttest.jwt.HttpResponseUtil;
 import com.kb.jwttest.jwt.JwtUtils;
 import com.kb.jwttest.security.SecurityContextUtils;
 import com.kb.jwttest.service.JoinService;
@@ -65,7 +66,10 @@ public class Controller {
             return ResponseEntity.badRequest().body("token is invalid");
 
         String newAccessToken = jwtUtils.createAccessToken(jwtUtils.getUsername(refreshToken), jwtUtils.getRole(refreshToken));
-        response.setHeader("access", newAccessToken);
+        String newRefreshToken = jwtUtils.createRefreshToken(jwtUtils.getUsername(refreshToken), jwtUtils.getRole(refreshToken));
+
+        HttpResponseUtil.setSuccessResponse(response, newAccessToken, newRefreshToken);
+
         return ResponseEntity.ok().build();
     }
 }

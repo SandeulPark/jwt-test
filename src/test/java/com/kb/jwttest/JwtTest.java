@@ -187,6 +187,12 @@ class JwtTest {
                     assertThat(jwtUtils.getUsername(accessToken)).isEqualTo("산드로");
                     assertThat(jwtUtils.getRole(accessToken)).isEqualTo("ROLE_ADMIN");
                     assertThat(jwtUtils.getCategory(accessToken)).isEqualTo("access");
+
+                    Cookie refreshTokenCookie = response.getCookie("refresh");
+                    String newRefreshToken = Objects.requireNonNull(refreshTokenCookie).getValue();
+                    assertThat(jwtUtils.getUsername(newRefreshToken)).isEqualTo("산드로");
+                    assertThat(jwtUtils.getRole(newRefreshToken)).isEqualTo("ROLE_ADMIN");
+                    assertThat(jwtUtils.getCategory(newRefreshToken)).isEqualTo("refresh");
                 })
                 .andDo(print());
     }

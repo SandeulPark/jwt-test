@@ -2,7 +2,6 @@ package com.kb.jwttest.jwt;
 
 import com.kb.jwttest.security.CustomUserDetails;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
@@ -43,18 +42,7 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
         String access = jwtUtils.createAccessToken(userDetails.getUsername(), grantedAuthority.getAuthority());
         String refresh = jwtUtils.createRefreshToken(userDetails.getUsername(), grantedAuthority.getAuthority());
 
-        // accessToken은 response header에
-        response.setHeader("access", access);
-        // refreshToken은 response cookie에
-        response.addCookie(createCookie("refresh", refresh));
-        response.setStatus(HttpStatus.OK.value());
-    }
-
-    private Cookie createCookie(String key, String value) {
-        Cookie cookie = new Cookie(key, value);
-        cookie.setMaxAge(60 * 60 * 24);
-        cookie.setHttpOnly(true);
-        return cookie;
+        HttpResponseUtil.setSuccessResponse(response, access, refresh);
     }
 
     // 인증 실패 시
