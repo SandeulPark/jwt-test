@@ -116,11 +116,11 @@ class JwtTest {
     @Test
     void auth() throws Exception {
         // Given
-        String jwt = getJwt();
+        String accessToken = getAccessToken();
 
         // When
         ResultActions resultActions = mvc.perform(get("/admin")
-                .header("access", jwt)
+                .header("access", accessToken)
         );
 
         // Then
@@ -133,11 +133,11 @@ class JwtTest {
     @Test
     void main() throws Exception {
         // Given
-        String jwt = getJwt();
+        String accessToken = getAccessToken();
 
         // When
         ResultActions resultActions = mvc.perform(get("/")
-                .header("access", jwt)
+                .header("access", accessToken)
         );
 
         // Then
@@ -166,7 +166,40 @@ class JwtTest {
                 .andDo(print());
     }
 
-    private String getJwt() throws Exception {
+    @DisplayName("accessToken을 재발급한다.")
+    @Test
+    void reissue() throws Exception {
+        // Given
+        String refreshToken = getRefreshToken();
+
+        // When
+        ResultActions resultActions = mvc.perform(post("/reissue")
+                .cookie(new Cookie("refresh", refreshToken))
+        );
+
+        // Then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(result -> {
+                    MockHttpServletResponse response = result.getResponse();
+
+                    String accessToken = response.getHeader("access");
+                    assertThat(jwtUtils.getUsername(accessToken)).isEqualTo("산드로");
+                    assertThat(jwtUtils.getRole(accessToken)).isEqualTo("ROLE_ADMIN");
+                    assertThat(jwtUtils.getCategory(accessToken)).isEqualTo("access");
+                })
+                .andDo(print());
+    }
+
+    private String getAccessToken() throws Exception {
+        return getTokenResponse().getHeader("access");
+    }
+
+    private String getRefreshToken() throws Exception {
+        return getTokenResponse().getCookie("refresh").getValue();
+    }
+
+    private MockHttpServletResponse getTokenResponse() throws Exception {
         userRepository.save(UserEntity.builder().username("산드로").password(bCryptPasswordEncoder.encode("1234")).build());
 
         return mvc.perform(post("/login")
@@ -174,8 +207,8 @@ class JwtTest {
                         .param("password", "1234")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
                         .characterEncoding(StandardCharsets.UTF_8)
-                ).andReturn()
-                .getResponse()
-                .getHeader("access");
+                ).andDo(print())
+                .andReturn()
+                .getResponse();
     }
 }

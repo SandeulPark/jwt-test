@@ -42,10 +42,22 @@ public class JwtUtils {
         return getPayload(token).get(CATEGORY, String.class);
     }
 
-    public boolean isExpired(String token) throws ExpiredJwtException {
-        return getPayload(token)
-                .getExpiration()
-                .before(new Date());
+    public boolean isExpired(String token) {
+        try {
+            return getPayload(token)
+                    .getExpiration()
+                    .before(new Date());
+        } catch (ExpiredJwtException e) {
+            return true;
+        }
+    }
+
+    public boolean isAccessToken(String token) {
+        return getCategory(token).equals(ACCESS);
+    }
+
+    public boolean isRefreshToken(String refreshToken) {
+        return getCategory(refreshToken).equals(REFRESH);
     }
 
     private Claims getPayload(String token) {

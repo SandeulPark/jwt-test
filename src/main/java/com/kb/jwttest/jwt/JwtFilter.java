@@ -2,7 +2,6 @@ package com.kb.jwttest.jwt;
 
 import com.kb.jwttest.entity.UserEntity;
 import com.kb.jwttest.security.CustomUserDetails;
-import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,41 +34,27 @@ public class JwtFilter extends OncePerRequestFilter {
             return;
         }
 
-        if (isExpired(response, accessToken)) return;
+        if (jwtUtils.isExpired(accessToken)) {
+            log.debug("token is expired");
+            PrintWriter writer = response.getWriter();
+            writer.print("access token expired");
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            return;
+        }
 
-        if (isInvalidAccessToken(response, accessToken)) return;
+        if (!jwtUtils.isAccessToken(accessToken)) {
+            log.debug("invalid access token");
+            PrintWriter writer = response.getWriter();
+            writer.print("access token expired");
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            return;
+        }
 
         UsernamePasswordAuthenticationToken authenticationToken = getUsernamePasswordAuthenticationToken(accessToken);
 
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
 
         filterChain.doFilter(request, response);
-    }
-
-    private boolean isExpired(HttpServletResponse response, String accessToken) throws IOException {
-        try {
-            jwtUtils.isExpired(accessToken);
-        } catch (ExpiredJwtException e) {
-            log.debug("token is expired");
-            PrintWriter writer = response.getWriter();
-            writer.print("access token expired");
-            response.setStatus(HttpStatus.UNAUTHORIZED.value());
-            return true;
-        }
-        return false;
-    }
-
-    private boolean isInvalidAccessToken(HttpServletResponse response, String accessToken) throws IOException {
-        String category = jwtUtils.getCategory(accessToken);
-
-        if (!category.equals("access")) {
-            log.debug("invalid access token");
-            PrintWriter writer = response.getWriter();
-            writer.print("access token expired");
-            response.setStatus(HttpStatus.UNAUTHORIZED.value());
-            return true;
-        }
-        return false;
     }
 
     private UsernamePasswordAuthenticationToken getUsernamePasswordAuthenticationToken(String token) {
