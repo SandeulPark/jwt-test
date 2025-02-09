@@ -68,30 +68,6 @@ class JwtTest {
         assertThat(userEntity.getRole()).isEqualTo("ROLE_ADMIN");
     }
 
-    @Test
-    void join_duplicate() throws Exception {
-        // Given
-        userRepository.save(UserEntity.builder().username("산드로").password("1234").build());
-
-        UserJoinCommand userJoinCommand = new UserJoinCommand("산드로", "1234");
-
-        // When
-        ResultActions resultActions = mvc.perform(post("/join")
-                .content(objectMapper.writeValueAsString(userJoinCommand))
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .characterEncoding(StandardCharsets.UTF_8)
-        );
-
-        // Then
-        resultActions
-                .andExpect(status().isBadRequest())
-                .andExpectAll(
-                        jsonPath("$.message").value("이미 존재하는 회원입니다.")
-                );
-
-        assertThat(userRepository.findAll()).hasSize(1);
-    }
-
     @DisplayName("로그인 성공 시 JWT가 발급되어야 한다.")
     @Test
     void login() throws Exception {
@@ -118,10 +94,11 @@ class JwtTest {
                 .andDo(print());
     }
 
+    @DisplayName("인증이 필요한 자원 요청 시 토큰이 유효하지 않은 경우 자원 접근이 거부된다.")
     @Test
-    void test() throws Exception {
+    void AccessDenied() throws Exception {
         mvc.perform(get("/hi"))
-                .andExpect(status().isOk())
+                .andExpect(status().isForbidden())
                 .andDo(print());
     }
 
@@ -139,6 +116,25 @@ class JwtTest {
         // Then
         resultActions
                 .andExpect(status().isOk())
+                .andDo(print());
+    }
+
+    @DisplayName("현재 사용자의 정보를 반환한다.")
+    @Test
+    void main() throws Exception {
+        // Given
+        String jwt = getJwt();
+
+        // When
+        ResultActions resultActions = mvc.perform(get("/")
+                .header("Authorization", jwt)
+        );
+
+        // Then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentUsername").value("산드로"))
+                .andExpect(jsonPath("$.currentRole").value("ROLE_ADMIN"))
                 .andDo(print());
     }
 

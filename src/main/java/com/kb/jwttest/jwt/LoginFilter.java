@@ -1,5 +1,6 @@
 package com.kb.jwttest.jwt;
 
+import com.kb.jwttest.security.CustomUserDetails;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

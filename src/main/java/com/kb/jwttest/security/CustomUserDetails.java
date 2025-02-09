@@ -1,4 +1,4 @@
-package com.kb.jwttest.jwt;
+package com.kb.jwttest.security;
 
 import com.kb.jwttest.entity.UserEntity;
 import lombok.RequiredArgsConstructor;

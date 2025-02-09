@@ -1,6 +1,7 @@
 package com.kb.jwttest.jwt;
 
 import com.kb.jwttest.entity.UserEntity;
+import com.kb.jwttest.security.CustomUserDetails;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
