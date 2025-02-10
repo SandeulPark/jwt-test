@@ -5,6 +5,7 @@ import com.kb.jwttest.dto.UserInfoResponse;
 import com.kb.jwttest.dto.UserJoinCommand;
 import com.kb.jwttest.jwt.HttpResponseUtil;
 import com.kb.jwttest.jwt.JwtService;
+import com.kb.jwttest.jwt.JwtUtils;
 import com.kb.jwttest.security.SecurityContextUtils;
 import com.kb.jwttest.service.JoinService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,7 +17,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Arrays;
 import java.util.Map;
 
 @RequiredArgsConstructor
@@ -51,14 +51,8 @@ public class Controller {
 
     @PostMapping("/reissue")
     public ResponseEntity reissue(HttpServletRequest request, HttpServletResponse response) {
-        String refreshToken = Arrays.stream(request.getCookies())
-                .filter(cookie -> cookie.getName().equals("refresh"))
-                .findAny()
-                .orElseThrow()
-                .getValue();
-
         try {
-            Tokens tokens = jwtService.reissue(refreshToken);
+            Tokens tokens = jwtService.reissue(JwtUtils.getRefreshToken(request));
             HttpResponseUtil.setSuccessResponse(response, tokens.accessToken(), tokens.refreshToken());
             return ResponseEntity.ok().build();
 

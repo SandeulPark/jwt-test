@@ -207,6 +207,30 @@ class JwtTest {
                 .andDo(print());
     }
 
+    @DisplayName("로그아웃 시 refreshToken이 제거된다.")
+    @Test
+    void logout() throws Exception {
+        // Given
+        String refreshToken = getRefreshToken();
+
+        // When
+        ResultActions resultActions = mvc.perform(post("/logout")
+                .cookie(new Cookie("refresh", refreshToken))
+        );
+
+        // Then
+        MvcResult mvcResult = resultActions
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andReturn();
+
+        MockHttpServletResponse response = mvcResult.getResponse();
+        assertThat(response.getHeader("access")).isNull();
+        assertThat(response.getCookie("refresh").getValue()).isNull();
+
+        assertThat(refreshTokenRepository.existsByToken(refreshToken)).isFalse();
+    }
+
     private String getAccessToken() throws Exception {
         return getTokenResponse().getHeader("access");
     }

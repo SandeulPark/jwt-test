@@ -3,12 +3,15 @@ package com.kb.jwttest.jwt;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.Objects;
 
 @Component
 public class JwtUtils {
@@ -85,5 +88,13 @@ public class JwtUtils {
                 .expiration(new Date(System.currentTimeMillis() + expiredMs))
                 .signWith(secretKey)
                 .compact();
+    }
+
+    public static String getRefreshToken(HttpServletRequest request) {
+        return Objects.requireNonNull(Arrays.stream(request.getCookies())
+                .filter(cookie -> cookie.getName().equals("refresh"))
+                .findAny()
+                .orElseThrow()
+                .getValue());
     }
 }

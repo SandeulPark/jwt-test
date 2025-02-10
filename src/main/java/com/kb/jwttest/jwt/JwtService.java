@@ -15,7 +15,7 @@ public class JwtService {
 
     @Transactional
     public Tokens reissue(String refreshToken) {
-        validate(refreshToken);
+        validateRefreshToken(refreshToken);
 
         String newAccessToken = jwtUtils.createAccessToken(jwtUtils.getUsername(refreshToken), jwtUtils.getRole(refreshToken));
         String newRefreshToken = jwtUtils.createRefreshToken(jwtUtils.getUsername(refreshToken), jwtUtils.getRole(refreshToken));
@@ -26,10 +26,7 @@ public class JwtService {
         return new Tokens(newAccessToken, newRefreshToken);
     }
 
-    private void validate(String refreshToken) {
-        if (refreshToken == null)
-            throw new RuntimeException("refresh token is null");
-
+    public void validateRefreshToken(String refreshToken) {
         if (jwtUtils.isExpired(refreshToken))
             throw new RuntimeException("refresh token is expired");
 
@@ -38,5 +35,11 @@ public class JwtService {
 
         if (!refreshTokenRepository.existsByToken(refreshToken))
             throw new RuntimeException("refresh token is not found");
+    }
+
+    @Transactional
+    public void logout(String refreshToken) {
+        refreshTokenRepository.findByToken(refreshToken)
+                .ifPresent(refreshTokenRepository::delete);
     }
 }

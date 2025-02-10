@@ -1,8 +1,6 @@
 package com.kb.jwttest.security;
 
-import com.kb.jwttest.jwt.JwtFilter;
-import com.kb.jwttest.jwt.JwtUtils;
-import com.kb.jwttest.jwt.LoginFilter;
+import com.kb.jwttest.jwt.*;
 import com.kb.jwttest.redis.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -16,6 +14,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.web.cors.CorsConfiguration;
 
 import java.util.Collections;
@@ -27,6 +26,7 @@ public class SecurityConfig {
     private final AuthenticationConfiguration authenticationConfiguration;
     private final JwtUtils jwtUtils;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final JwtService jwtService;
 
     @Bean
     public AuthenticationManager authenticationManager() throws Exception {
@@ -72,6 +72,7 @@ public class SecurityConfig {
 
                 .addFilterBefore(new JwtFilter(jwtUtils), LoginFilter.class)
                 .addFilterAt(loginFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new CustomLogoutFilter(jwtService), LogoutFilter.class)
                 .build();
     }
 }
